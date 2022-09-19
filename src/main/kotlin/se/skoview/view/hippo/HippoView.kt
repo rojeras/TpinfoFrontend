@@ -16,7 +16,7 @@
  */
 package se.skoview.view.hippo
 
-import io.kvision.core.* // ktlint-disable no-wildcard-imports
+import io.kvision.core.*
 import io.kvision.core.Color.Companion.hex
 import io.kvision.data.BaseDataComponent
 import io.kvision.data.dataContainer
@@ -24,10 +24,9 @@ import io.kvision.form.select.simpleSelectInput
 import io.kvision.form.text.TextInput
 import io.kvision.form.text.TextInputType
 import io.kvision.form.text.textInput
-import io.kvision.html.* // ktlint-disable no-wildcard-imports
+import io.kvision.html.*
 import io.kvision.modal.Modal
 import io.kvision.modal.ModalSize
-import io.kvision.panel.flexPanel
 import io.kvision.panel.hPanel
 import io.kvision.panel.simplePanel
 import io.kvision.panel.vPanel
@@ -41,126 +40,134 @@ import se.skoview.controller.HippoManager
 import se.skoview.controller.View
 import se.skoview.controller.formControlXs
 import se.skoview.controller.getVersion
-import se.skoview.model.* // ktlint-disable no-wildcard-imports
+import se.skoview.model.*
 import kotlin.math.min
 
 fun Container.hippoView(state: HippoState) {
     println("In hippoView")
     val integrationLists = createHippoViewData(state)
     simplePanel {
-        // font-family: Georgia,Times New Roman,Times,serif;
         fontFamily = "Times New Roman"
-        // width = 99.vw
         // Page header
         vPanel {
-            // marginRight = 5.px
             div {
                 h2("Hippo - integrationer via tjänsteplattform/ar för nationell e-hälsa")
                 div("Integrationer för tjänsteplattformar vars tjänstadresseringskatalog (TAK) är tillgänglig i Ineras TAK-api visas.")
             }.apply {
-                // width = 100.perc
                 background = Background(hex(0x113d3d))
                 align = Align.CENTER
                 color = Color.name(Col.WHITE)
                 marginTop = 5.px
             }
         }
-
-        // Date selector
-        flexPanel(
-            FlexDirection.ROW, FlexWrap.WRAP, JustifyContent.SPACEBETWEEN, AlignItems.CENTER,
-            spacing = 5
-        ) {
-            clear = Clear.BOTH
-            margin = 5.px
+        hPanel(justify = JustifyContent.SPACEBETWEEN) {
+            width = 100.perc
             background = Background(hex(0xf6efe9))
+            hPanel(justify = JustifyContent.START) {
+                margin = 5.px
+                // Select date
+                div {
+                    align = Align.LEFT
+                    margin = 5.px
+                    marginTop = 10.px
+                    val opts: List<Pair<String, String>> = listOf(
+                        state.updateDates,
+                        listOf(BaseDates.getLastIntegrationDate()),
+                        listOf(state.dateEffective)
+                    ).flatten()
+                        .distinct()
+                        .sortedByDescending { it }
+                        .map { Pair(it, it) } as List<Pair<String, String>>
 
-            // Select date
-            div {
-                align = Align.LEFT
+                    simpleSelectInput(
+                        options = opts,
+                        value = state.dateEffective
+                    ) {
+                        addCssStyle(formControlXs)
+                        width = 80.px
+                        background = Background(Color.name(Col.WHITE))
+                    }.onEvent {
+                        change = {
+                            val date = self.value ?: ""
+                            HippoManager.dateSelected(DateType.EFFECTIVE_AND_END, date)
+                        }
+                    }
+                }
+                // Statistics button
+                div {
+                    align = Align.LEFT
+                    margin = 5.px
+                    val chainId =
+                        if (integrationLists.plattformChains.size == 1) integrationLists.plattformChains[0].id
+                        else -1
 
-                val opts: List<Pair<String, String>> = listOf(
-                    state.updateDates,
-                    listOf(BaseDates.getLastIntegrationDate()),
-                    listOf(state.dateEffective)
-                ).flatten() // as MutableList<String>
-                    // val opts: List<Pair<String, String>> = state.updateDates
-                    .distinct()
-                    .sortedByDescending { it }
-                    .map { Pair(it, it) } as List<Pair<String, String>>
+                    var disabled = true
+                    if (chainId > 0) {
+                        val chain = PlattformChain.mapp[chainId]
 
-                simpleSelectInput(
-                    options = opts,
-                    value = state.dateEffective
-                ) {
-                    addCssStyle(formControlXs)
-                    width = 80.px
-                    background = Background(Color.name(Col.WHITE))
-                }.onEvent {
-                    change = {
-                        // store.dispatch { dispatch, getState ->
-                        val date = self.value ?: ""
-                        // HippoManager.bothDatesSelected(date)
-                        HippoManager.dateSelected(DateType.EFFECTIVE_AND_END, date)
-                        // }
+                        disabled = !(
+                                StatisticsPlattform.mapp.containsKey(chain!!.first) ||
+                                        StatisticsPlattform.mapp.containsKey(chain.last)
+                                )
+                    }
+                    val buttonStyle: ButtonStyle =
+                        if (disabled) ButtonStyle.LIGHT
+                        else ButtonStyle.INFO
+                    button(
+                        "Visa statistik",
+                        style = buttonStyle,
+                        disabled = disabled
+                    ) {
+                        size = ButtonSize.SMALL
+                    }.onClick {
+                        // HippoManager.setView(View.STAT_ADVANCED)
+                        HippoManager.setView(View.STAT)
                     }
                 }
             }
-
-            // Statistics button
-            div {
-                align = Align.CENTER
-                val chainId =
-                    if (integrationLists.plattformChains.size == 1) integrationLists.plattformChains[0].id
-                    else -1
-
-                var disabled = true
-                if (chainId > 0) {
-                    val chain = PlattformChain.mapp[chainId]
-
-                    disabled = !(
-                        StatisticsPlattform.mapp.containsKey(chain!!.first) ||
-                            StatisticsPlattform.mapp.containsKey(chain.last)
-                        )
-                }
-                val buttonStyle: ButtonStyle =
-                    if (disabled) ButtonStyle.LIGHT
-                    else ButtonStyle.INFO
-                button(
-                    "Visa statistik",
-                    style = buttonStyle,
-                    disabled = disabled
-                ) {
-                    size = ButtonSize.SMALL
-                }.onClick {
-                    // HippoManager.setView(View.STAT_ADVANCED)
-                    HippoManager.setView(View.STAT)
-                }
-            }
-
-            // About button
-            div {
-                align = Align.RIGHT
-                val modal = Modal("Om Hippo")
-                modal.iframe(src = "about-hippo.html", iframeHeight = 400, iframeWidth = 700)
-                modal.size = ModalSize.LARGE
-                modal.addButton(
-                    Button(
-                        "Stäng"
-                    ).onClick {
-                        modal.hide()
+            hPanel(justify = JustifyContent.END) {
+                margin = 5.px
+                // Slack button
+                div {
+                    align = Align.RIGHT
+                    margin = 5.px
+                    button(
+                        "Hippo på Slack",
+                        style = ButtonStyle.PRIMARY
+                    ) {
+                        size = ButtonSize.SMALL
+                    }.onClick {
+                        window.open("https://hipposdialog-yta.slack.com", "_blank")
+                    }.apply {
+                        addBsBgColor(BsBgColor.LIGHT)
+                        addBsColor(BsColor.BLACK50)
                     }
-                )
-                button(
-                    "Om Hippo ${getVersion("hippoVersion")}",
-                    style = ButtonStyle.INFO
-                ) {
-                    size = ButtonSize.SMALL
-                }.onClick {
-                    modal.show()
-                }.apply {
-                    addBsBgColor(BsBgColor.LIGHT)
-                    addBsColor(BsColor.BLACK50)
+                }
+                // About button
+                div {
+                    align = Align.RIGHT
+                    margin = 5.px
+                    val modal = Modal("Om Hippo")
+                    modal.iframe(src = "about-hippo.html", iframeHeight = 400, iframeWidth = 700)
+                    modal.size = ModalSize.LARGE
+                    modal.addButton(
+                        Button(
+                            "Stäng"
+                        ).onClick {
+                            modal.hide()
+                        }
+                    )
+                    button(
+                        "Om Hippo ${getVersion("hippoVersion")}",
+                        style = ButtonStyle.INFO
+                    ) {
+                        size = ButtonSize.SMALL
+                    }.onClick {
+                        modal.show()
+                    }.apply {
+                        addBsBgColor(BsBgColor.LIGHT)
+                        addBsColor(BsColor.BLACK50)
+                    }
                 }
             }
         }
