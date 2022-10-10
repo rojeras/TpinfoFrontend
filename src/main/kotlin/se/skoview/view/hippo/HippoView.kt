@@ -93,9 +93,12 @@ fun Container.hippoView(state: HippoState) {
                         }
                     }
                 }
+            }
+            hPanel(justify = JustifyContent.END) {
+                margin = 5.px
                 // Statistics button
                 div {
-                    align = Align.LEFT
+                    align = Align.RIGHT
                     margin = 5.px
                     val chainId =
                         if (integrationLists.plattformChains.size == 1) integrationLists.plattformChains[0].id
@@ -124,9 +127,6 @@ fun Container.hippoView(state: HippoState) {
                         HippoManager.setView(View.STAT)
                     }
                 }
-            }
-            hPanel(justify = JustifyContent.END) {
-                margin = 5.px
                 // Slack button
                 div {
                     align = Align.RIGHT
