@@ -32,20 +32,14 @@ import java.time.ZoneOffset
 // -------------------------------------------------------------------------------------------
 // Main program
 // -------------------------------------------------------------------------------------------
-/**
- * todo:
- * To push a docker image to nogui registry:
- * 1. Mandatory paramters; git repo and git semver tag on the form vM.m.p
- * 2. Check out the branch and and tag and verify that there are no more commits after the git tag
- * 3. gradle clean
- * 4. Build
- * 5. Add the following as docker tag: branch-semver-commit hash
- */
 
 Largument.initialise(
     """
-    This script builds a hippo frontend in a Docker image
-    It must be run from the base dir in the git project
+    This script builds a hippo frontend in a docker image.
+    It must be run from the base dir in the git project.
+    The branch must be committed.
+    Either --run or --push must be used.
+    The commit must be annotated with a semver version to be able to push the image.
     """.trimIndent()
 )
 
@@ -141,7 +135,7 @@ tempFile.printWriter().use { writer ->
 check(file.delete() && tempFile.renameTo(file)) { "failed to replace file" }
 // ------------------------------------------------------------------------------
 
-lExec("docker build --rm -t $localImageTag .", quiet = false)
+lExec("docker build --platform linux/amd64 --rm -t $localImageTag .", quiet = false)
 
 if (Largument.isSet("push")) {
         lExec("docker tag $localImageTag $noguiImageTag")
